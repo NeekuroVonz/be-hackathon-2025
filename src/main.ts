@@ -7,9 +7,21 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({ origin: "*" });
-  app.setGlobalPrefix('api');
+  const allowlist = new Set([
+    'http://localhost:3000',
+    'http://10.0.109.54:3000',
+  ]);
 
+  app.enableCors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      return allowlist.has(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'), false);
+    },
+    credentials: true,
+    methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
+  });
+  app.setGlobalPrefix('api');
   app.use(
     session({
       secret: process.env.SESSION_SECRET || 'hackathon-secret',
