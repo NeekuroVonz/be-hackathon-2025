@@ -16,27 +16,22 @@ export class SimulationsController {
     type: RunSimulationDto,
     examples: {
       flood: {
-        summary: 'Flood - Nha Trang',
+        summary: 'Flood with location coords',
         value: {
           disasterType: 'flood',
-          rainfallIntensity: 35,
+          rainfallIntensity: '',
           duration: 12,
           windSpeed: 0,
           magnitude: 0,
           fireSpreadRate: 0,
-          location: 'Nha Trang',
-        },
-      },
-      earthquake: {
-        summary: 'Earthquake - Nha Trang',
-        value: {
-          disasterType: 'earthquake',
-          rainfallIntensity: null,
-          duration: 12,
-          windSpeed: 0,
-          magnitude: 5.6,
-          fireSpreadRate: 0,
-          location: 'Nha Trang',
+          location: {
+            name: 'Tân Bình',
+            country: 'VN',
+            countryCode: 'VN',
+            lat: 12.7106,
+            lon: 108.2183,
+            displayName: 'Tân Bình, Viet Nam',
+          },
         },
       },
     },

@@ -1,15 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './modules/auth/auth.module';
-import { AccountUserModule } from "./modules/account-user/account-user.module";
 import { WeatherModule } from "./modules/weather/weather.module";
 import { LlmModule } from "./modules/llm/llm.module";
-import { DisasterModule } from "./modules/disaster/disaster.module";
 import { ScenarioModule } from "./modules/scenario/scenario.module";
-import { VolunteerModule } from "./modules/volunteer/volunteer.module";
-import { AidModule } from "./modules/aid/aid.module";
 import { ChatModule } from "./modules/chat/chat.module";
 import { SimulationModule } from "./modules/simulation/simulations.module";
+import { AccountUserModule } from "./modules/account-user/account-user.module";
 
 @Module({
   imports: [
@@ -24,15 +21,12 @@ import { SimulationModule } from "./modules/simulation/simulations.module";
       synchronize: true,
     }),
     AuthModule,
-    AccountUserModule,
     WeatherModule,
     LlmModule,
-    DisasterModule,
     ScenarioModule,
-    VolunteerModule,
-    AidModule,
     ChatModule,
     SimulationModule,
+    AccountUserModule
   ],
 })
 export class AppModule {

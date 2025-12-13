@@ -8,8 +8,35 @@ export class Scenario {
   @Column({ name: 'usr_id', type: 'uuid', nullable: true })
   usrId: string | null;
 
-  @Column({ name: 'location_name', type: 'varchar', length: 255 })
-  locationName: string;
+  @Column({ name: 'lat', type: 'double precision', nullable: true })
+  lat: number | null;
+
+  @Column({ name: 'lon', type: 'double precision', nullable: true })
+  lon: number | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  location: any;
+
+  /**
+   * Convenience accessor for older code paths that expect "locationName".
+   * Not persisted as a column.
+   */
+  get locationName(): string | null {
+    return (
+      this.location?.displayName ||
+      this.location?.name ||
+      null
+    );
+  }
+
+  @Column({ type: 'jsonb', nullable: true })
+  input: any;
+
+  @Column({ type: 'jsonb', nullable: true })
+  resultSummary: any;
+
+  @Column({ type: 'jsonb', nullable: true })
+  planJson: any;
 
   @Column({ name: 'lang', type: 'varchar', length: 20, default: 'en' })
   lang: string;
@@ -34,18 +61,8 @@ export class Scenario {
   @Column({ name: 'resources_json', type: 'jsonb', nullable: true })
   resourcesJson: any;
 
-  // Auto-generated response plan (JSONB)
-  @Column({ name: 'plan_json', type: 'jsonb', nullable: true })
-  planJson: any;
-
   @Column({ name: 'note', type: 'varchar', length: 500, nullable: true })
   note: string | null;
-
-  @Column({ type: 'jsonb', nullable: true })
-  input: any;
-
-  @Column({ type: 'jsonb', nullable: true })
-  resultSummary: any;
 
   @Column({ name: 'cre_dt', type: 'timestamptz', default: () => 'now()' })
   creDt: Date;
