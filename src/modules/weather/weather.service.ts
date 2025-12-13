@@ -58,7 +58,7 @@ export class WeatherService {
 
     const safeLang = allowedLangs.includes(lang) ? lang : 'en';
 
-    const url = `${this.baseUrl}/current.json?key=${this.apiKey}&q=${encodeURIComponent(
+    const url = `${this.baseUrl}/forecast.json?key=${this.apiKey}&q=${encodeURIComponent(
       locationQuery,
     )}&lang=${safeLang}&days=1&aqi=yes&alerts=yes`;
 
