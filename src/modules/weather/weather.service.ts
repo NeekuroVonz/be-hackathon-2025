@@ -4,7 +4,7 @@ import axios, { AxiosError } from 'axios';
 @Injectable()
 export class WeatherService {
   private readonly apiKey =
-    process.env.OPENWEATHER_API_KEY || process.env.WEATHER_API_KEY;
+    process.env.OPEN_WEATHER_API_KEY || process.env.WEATHER_API_KEY;
 
   private readonly baseUrl = 'https://api.openweathermap.org/data/2.5';
 

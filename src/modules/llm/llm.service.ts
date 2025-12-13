@@ -98,21 +98,51 @@ export class LlmService {
   }
 
   private buildPrompt(input: any, weather: any) {
-    const lat = input?.location?.lat;
-    const lon = input?.location?.lon;
+    const lat = Number(input?.location?.lat ?? 0);
+    const lon = Number(input?.location?.lon ?? 0);
+    const displayName =
+      input?.location?.displayName || input?.location?.name || 'Unknown location';
 
     return `
-      You are a disaster response prediction engine.
-      Return ONLY valid JSON (no markdown, no extra text). Output must follow this schema:
+      You are an emergency-management AI that simulates and predicts flood impacts for a location.
       
+      CRITICAL OUTPUT RULES:
+      - Return ONLY valid JSON.
+      - No markdown, no explanation, no extra text.
+      - All numbers must be real numbers (no NaN), and KPI values must be integers.
+      - You must return exactly 3 topActions with rank 1..3.
+      - You must generate at least 2 impactZones (HIGH and MEDIUM at minimum).
+      - impactZones must be polygons around the given coordinate. Coordinates are [lng, lat].
+      - The "forecastHours" in floodPrediction must equal input.duration.
+      - If rainfallIntensity is null or 0 but weather shows rain, infer rainfallIntensity from weather.
+      
+      TASK:
+      Given the user input + current weather, simulate an UPCOMING FLOOD event over the next input.duration hours.
+      Predict:
+      1) flood probability, severity, and time-to-impact,
+      2) affected zones (polygons),
+      3) key impacts (households affected, road blockages, shelters needed),
+      4) top response actions,
+      5) a structured response plan.
+      
+      OUTPUT JSON SCHEMA (must match exactly):
       {
+        "floodPrediction": {
+          "locationName": string,
+          "forecastHours": number,
+          "probability": number,               // 0..1
+          "severity": "LOW"|"MEDIUM"|"HIGH",
+          "timeToImpactHours": number,         // 0..forecastHours (can be 0 if immediate)
+          "mainDrivers": string[]              // e.g. ["High rainfall intensity", "Saturated ground", "Low elevation (assumed)"]
+        },
         "map": {
           "center": {"lat": number, "lng": number},
           "zoom": number,
           "impactZones": [
             {
-              "level": "HIGH" | "MEDIUM" | "LOW",
-              "geometry": { "type": "Polygon", "coordinates": [[[lng,lat], ...]] }
+              "level": "HIGH"|"MEDIUM"|"LOW",
+              "label": string,
+              "geometry": { "type": "Polygon", "coordinates": [[[lng,lat],...]] }
             }
           ]
         },
@@ -126,23 +156,55 @@ export class LlmService {
         ],
         "plan": {
           "summary": string,
-          "steps": [ { "title": string, "details": string } ]
+          "assumptions": string[],
+          "steps": [
+            { "phase": "NOW"|"NEXT_6_HOURS"|"NEXT_12_HOURS"|"NEXT_24_HOURS",
+              "title": string,
+              "details": string
+            }
+          ],
+          "evacuationGuidance": {
+            "trigger": string,
+            "priorityAreas": string[],
+            "publicMessage": string
+          }
         }
       }
       
-      Rules:
-      - Use provided input + weather to compute realistic values.
-      - KPIs must be positive integers.
-      - impactZones must be polygons around the provided coordinate.
-      - topActions must contain exactly 3 items ranked 1..3.
+      COMPUTATION GUIDELINES:
+      - Use rainfallIntensity (mm/hr) and duration (hours) as primary drivers.
+      - Use weather.current (rain, clouds, humidity, wind, pressure) to adjust probability.
+      - Simple severity heuristic:
+        - totalRain = rainfallIntensity * duration
+        - If totalRain >= 200 => HIGH, 80..199 => MEDIUM, <80 => LOW
+      - Probability heuristic:
+        - Start at 0.25
+        - Add +0.25 if rainfallIntensity >= 20
+        - Add +0.20 if rainfallIntensity >= 35
+        - Add +0.15 if duration >= 12
+        - Add +0.10 if weather indicates rain (any rain volume or "rain" condition)
+        - Clamp to 0..0.98
+      - timeToImpactHours:
+        - If rainfallIntensity >= 35 => 0..2
+        - If rainfallIntensity 20..34 => 2..6
+        - else => 6..forecastHours
+      - KPIs scale with severity and totalRain. Must be integers and plausible.
+      - impactZones:
+        - Create polygons around center with radius depending on severity:
+          HIGH: ~2–6 km, MEDIUM: ~1–3 km, LOW: ~0.5–1.5 km (convert to degrees approx: 1km ~ 0.009 lat)
+        - Provide at least 2 zones: HIGH and MEDIUM. Add LOW if you can.
       
-      INPUT:
+      CONTEXT:
+      User input:
       ${JSON.stringify(input)}
       
-      WEATHER (OpenWeather current):
+      Current weather from OpenWeather:
       ${JSON.stringify(weather)}
       
-      Coordinate center should be lat=${lat}, lon=${lon}.
+      Known coordinate center:
+      lat=${lat}, lon=${lon}, displayName="${displayName}"
+      
+      Now return ONLY the JSON object.
       `;
   }
 

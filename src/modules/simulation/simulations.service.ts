@@ -1,14 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ActionPriority, DisasterType, RunSimulationDto, SimulationResultDto, TopAction } from './dto/simulation.dto';
 import { ScenarioService } from '../scenario/scenario.service';
 import { WeatherService } from "../weather/weather.service";
+import { LlmService } from "../llm/llm.service";
 
 @Injectable()
 export class SimulationsService {
   constructor(
     private readonly scenarioService: ScenarioService,
     private readonly weatherService: WeatherService,
-    // private readonly aiService: SimulationAiService, // later
+    private readonly llmService: LlmService,
   ) {
   }
 
@@ -134,27 +135,26 @@ export class SimulationsService {
 
     const weather = await this.weatherService.getCurrentWeatherByCoords(lat, lon, 'en', 'metric');
 
-    // ✅ NOW: send dto + weather into AI
-    // const ai = await this.aiService.predict({ input: dto, weather });
-    const result: SimulationResultDto = {
+    const ai = await this.llmService.analyzeAndPredict({
+      input: dto,
+      weather,
+    });
+
+    const result = {
       simulationId: scenario.scenarioId,
-      input: { ...dto, rainfallIntensity: dto.rainfallIntensity ?? null },
+      input: dto,
       map: {
-        center: { lat, lng: lon },
-        zoom: 12,
+        center: ai.map.center,           // {lat,lng}
+        zoom: ai.map.zoom ?? 12,
         legend: [
           { level: 'HIGH', label: 'High Impact' },
           { level: 'MEDIUM', label: 'Medium Impact' },
           { level: 'LOW', label: 'Low Impact' },
         ],
-        impactZones: [], // fill from AI later
+        impactZones: ai.map.impactZones, // ✅ should be non-empty
       },
-      kpis: {
-        householdsAffected: 1000, // from AI later
-        roadBlockages: 10,
-        sheltersNeeded: 2000,
-      },
-      topActions: this.buildTopActions(dto.disasterType),
+      kpis: ai.kpis,                      // ✅ dynamic
+      topActions: ai.topActions,          // ✅ dynamic
       responsePlan: { url: `/api/simulations/${scenario.scenarioId}/plan`, scenarioId: scenario.scenarioId },
       generatedAt: new Date().toISOString(),
     };
