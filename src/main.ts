@@ -10,6 +10,7 @@ async function bootstrap() {
   const allowlist = new Set([
     'http://localhost:3000',
     'http://10.0.109.54:3000',
+    'http://10.0.109.54:8080',
     'https://nekooitine.io.vn',
   ]);
 
@@ -49,7 +50,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(process.env.PORT || 3000, '0.0.0.0');
 }
 
 bootstrap();

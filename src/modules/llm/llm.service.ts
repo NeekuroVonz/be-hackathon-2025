@@ -145,4 +145,18 @@ export class LlmService {
       };
     }
   }
+
+  async generateJson(prompt: string) {
+    const res = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+      { contents: [{ parts: [{ text: prompt }] }] },
+      { params: { key: this.geminiApiKey } },
+    );
+
+    const rawText = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    const jsonText = jsonMatch ? jsonMatch[0] : rawText;
+
+    return JSON.parse(jsonText);
+  }
 }
