@@ -171,11 +171,12 @@ export class SimulationsService {
   /** Used by simulations.controller.ts for the "View Full Response Plan" button */
   async getFullPlan(scenarioId: string) {
     const sc = await this.scenarioService.getScenario(scenarioId);
-    return {
-      scenarioId: sc.scenarioId,
-      input: (sc as any).input ?? null,
-      resultSummary: (sc as any).resultSummary ?? null,
-      plan: (sc as any).planJson ?? null,
-    };
+    return (sc as any).resultSummary ?? null;
+    // return {
+    //   scenarioId: sc.scenarioId,
+    //   input: (sc as any).input ?? null,
+    //   resultSummary: (sc as any).resultSummary ?? null,
+    //   plan: (sc as any).planJson ?? null,
+    // };
   }
 }

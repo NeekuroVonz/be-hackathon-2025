@@ -40,15 +40,85 @@ export class LlmService {
   // (Other modules/controllers are calling these names)
   // -----------------------------
 
-  /** Used by chat.service.ts (older code path) */
+  async decideWeatherToolCall(input: { message: string; lang: string }) {
+    const prompt = `
+      You are a tool-using assistant.
+      
+      User message:
+      ${input.message}
+      
+      Decide if you need current weather data for a specific place to answer.
+      If yes, request tool call.
+      
+      Return ONLY valid JSON in ONE of these forms:
+      
+      1) Tool call:
+      { "type": "tool_call", "tool": "get_weather", "args": { "place": "<city/country>", "lang": "${input.lang}" } }
+      
+      2) Final answer (no tool needed):
+      { "type": "final", "answer": "<answer in ${input.lang}>" }
+      
+      Rules:
+      - If user asks "weather in X" or "temperature in X" or "is it raining in X", you MUST call the tool.
+      - The place must be a human-readable string (e.g., "Hong Kong", "Paris, FR", "Ho Chi Minh City").
+      - If user doesn't specify a place, ask a follow-up as final answer (no tool call).
+    `;
+
+    const json = await this.generateJson(prompt);
+    return json as { type: 'tool_call' | 'final'; tool?: string; args?: any; answer?: string };
+  }
+
+  async finalizeWithWeatherTool(input: {
+    originalMessage: string;
+    lang: string;
+    placeResolved: string;
+    weather: any;
+  }) {
+    const prompt = `
+      You are a friendly weather assistant.
+      
+      You have tool output (current weather) for: ${input.placeResolved}
+      
+      User question:
+      ${input.originalMessage}
+      
+      OpenWeather current weather JSON:
+      ${JSON.stringify(input.weather)}
+      
+      Return ONLY JSON:
+      { "answer": "<answer in ${input.lang}>" }
+      
+      Guidelines:
+      - Mention the resolved place name.
+      - Summarize: condition, temperature, rain (if any), wind.
+      - Give practical advice if relevant (umbrella, heat, driving).
+      - If user asks about forecast, say you only have current conditions.
+    `;
+
+    const json = await this.generateJson(prompt);
+    return json as { answer: string };
+  }
+
+  // Your existing "generateJson" should call your model and parse JSON.
+  // Keep it, but ensure it strips ```json fences.
   async generateJson(prompt: string) {
-    // For compatibility, treat the prompt as additional context.
-    // If you later want strict prompt->json, add a dedicated Gemini call here.
-    const result = await this.analyzeAndPredict({
-      input: { disasterType: 'flood', duration: 1, location: { lat: 0, lon: 0 }, prompt },
-      weather: {},
-    });
-    return result;
+    if (!this.geminiApiKey) {
+      // minimal hackathon fallback
+      return { type: 'final', answer: 'LLM key missing.' };
+    }
+
+    const res = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
+      { contents: [{ parts: [{ text: prompt }] }] },
+      { params: { key: this.geminiApiKey } },
+    );
+
+    const rawText = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const cleaned = String(rawText).replace(/```json/g, '').replace(/```/g, '').trim();
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    const jsonText = match ? match[0] : cleaned;
+
+    return JSON.parse(jsonText);
   }
 
   /** Used by disaster.controller.ts (older code path) */

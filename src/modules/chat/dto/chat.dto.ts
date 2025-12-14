@@ -1,15 +1,18 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString } from 'class-validator';
 
-export class ChatDto {
-  @ApiProperty({ example: 'What should I do if flooding happens tonight?' })
+export class ChatRequestDto {
+  @ApiProperty({ example: 'What is the weather in Hong Kong today?' })
+  @IsString()
   message: string;
 
-  @ApiProperty({ example: 'vi', required: false })
+  @ApiPropertyOptional({ example: 'en' })
+  @IsOptional()
+  @IsString()
   lang?: string;
+}
 
-  @ApiProperty({ example: '019a....', required: false })
-  scenarioId?: string;
-
-  @ApiProperty({ example: 'Ho Chi Minh City', required: false })
-  locationName?: string;
+export class ChatResponseDto {
+  @ApiProperty()
+  answer: string;
 }

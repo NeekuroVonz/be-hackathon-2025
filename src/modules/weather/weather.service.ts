@@ -88,4 +88,17 @@ export class WeatherService {
     }
   }
 
+  async geocodeCity(query: string) {
+    const res = await axios.get('https://api.openweathermap.org/geo/1.0/direct', {
+      params: { q: query, limit: 1, appid: this.apiKey },
+    });
+    const first = Array.isArray(res.data) ? res.data[0] : null;
+    if (!first) return null;
+
+    const displayName = [first.name, first.state, first.country]
+      .filter(Boolean)
+      .join(', ');
+
+    return { lat: first.lat, lon: first.lon, displayName };
+  }
 }
