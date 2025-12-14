@@ -7,19 +7,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const allowlist = new Set([
-    'http://localhost:3000',
-    'http://10.0.109.54:3000',
-    'http://10.0.109.54:8080',
-    'https://nekooitine.io.vn',
-  ]);
 
   app.enableCors({
-    origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
-      return allowlist.has(origin) ? cb(null, true) : cb(new Error('Not allowed by CORS'), false);
-    },
-    credentials: true,
+    origin: '*',
+    credentials: false,
     methods: 'GET,POST,PUT,DELETE,PATCH,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
   });

@@ -41,7 +41,7 @@ export class SimulationsController {
   }
 
   // optional: for "View Full Response Plan"
-  @Get(':scenarioId/plan')
+  @Get(':scenarioId')
   @HttpCode(HttpStatus.OK)
   getPlan(@Param('scenarioId') scenarioId: string) {
     return this.simulationsService.getFullPlan(scenarioId);
