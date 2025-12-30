@@ -123,26 +123,30 @@ export class SimulationsService {
 
   async run(dto: RunSimulationDto): Promise<SimulationResultDto> {
     const { lat, lon } = dto.location;
+    // Use the first selected language, default to 'en'
+    const primaryLang = dto.languages?.[0] ?? 'en';
 
     const scenario = await this.scenarioService.createScenarioFromSimulation({
       usrId: null,
       location: dto.location,
       lat,
       lon,
-      lang: 'en',
+      lang: primaryLang,
       note: `Simulation run: ${dto.disasterType}`,
     });
 
-    const weather = await this.weatherService.getCurrentWeatherByCoords(lat, lon, 'en', 'metric');
+    const weather = await this.weatherService.getCurrentWeatherByCoords(lat, lon, primaryLang, 'metric');
 
     const ai = await this.llmService.analyzeAndPredict({
       input: dto,
       weather,
+      languages: dto.languages ?? ['en'],
     });
 
     const result = {
       simulationId: scenario.scenarioId,
       input: dto,
+      languages: dto.languages ?? ['en'],
       map: {
         center: ai.map.center,           // {lat,lng}
         zoom: ai.map.zoom ?? 12,

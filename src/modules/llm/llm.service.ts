@@ -136,13 +136,14 @@ export class LlmService {
   async analyzeAndPredict(args: {
     input: any;
     weather: any;
+    languages?: string[];
   }): Promise<LlmSimulationResult> {
     // If no API key, still return dynamic-ish fallback (hackathon safe)
     if (!this.geminiApiKey) {
       return this.fallback(args.input);
     }
 
-    const prompt = this.buildPrompt(args.input, args.weather);
+    const prompt = this.buildPrompt(args.input, args.weather, args.languages ?? ['en']);
 
     try {
       const res = await axios.post(
@@ -168,11 +169,12 @@ export class LlmService {
     }
   }
 
-  private buildPrompt(input: any, weather: any) {
+  private buildPrompt(input: any, weather: any, languages: string[] = ['en']) {
     const lat = Number(input?.location?.lat ?? 0);
     const lon = Number(input?.location?.lon ?? 0);
     const displayName =
       input?.location?.displayName || input?.location?.name || 'Unknown location';
+    const languageList = languages.join(', ');
 
     return `
       You are an emergency-management AI that simulates and predicts flood impacts for a location.
@@ -274,6 +276,10 @@ export class LlmService {
       
       Known coordinate center:
       lat=${lat}, lon=${lon}, displayName="${displayName}"
+      
+      OUTPUT LANGUAGE:
+      Generate all text content (titles, descriptions, summaries, public messages, step details, etc.) in this language: ${languageList.split(',')[0]?.trim() || 'en'}
+      Use the specified language for all human-readable text fields in the JSON response.
       
       Now return ONLY the JSON object.
       `;

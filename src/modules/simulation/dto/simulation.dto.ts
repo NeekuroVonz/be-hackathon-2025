@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNumber, IsObject, IsOptional, IsString, Min, ValidateNested, } from 'class-validator';
+import { ArrayMinSize, IsArray, IsEnum, IsInt, IsNumber, IsObject, IsOptional, IsString, Matches, Min, ValidateNested, } from 'class-validator';
 
 export enum DisasterType {
   FLOOD = 'flood',
@@ -88,11 +88,24 @@ export class RunSimulationDto {
   @ValidateNested()
   @Type(() => LocationDto)
   location: LocationDto;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['en', 'vi'],
+    description: 'Languages for simulation output (ISO 639-1 codes, e.g., "en", "vi", "es"). Defaults to ["en"] if not provided.',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @Matches(/^[a-z]{2}$/, { each: true, message: 'Each language must be a valid 2-letter ISO 639-1 code' })
+  @ArrayMinSize(1)
+  languages?: string[];
 }
 
 export interface SimulationResultDto {
   simulationId: string;
   input: any;
+  languages: string[];
   map: any;
   kpis: any;
   topActions: TopAction[];
