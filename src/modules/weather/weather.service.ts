@@ -8,6 +8,52 @@ export class WeatherService {
 
   private readonly baseUrl = 'https://api.openweathermap.org/data/2.5';
 
+  // Simple in-memory cache for weather data (TTL: 5 minutes, max 100 entries)
+  private readonly weatherCache = new Map<string, { data: any; expiry: number }>();
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  private readonly CACHE_MAX_SIZE = 100; // Maximum cache entries
+  private readonly REQUEST_TIMEOUT_MS = 10000; // 10 seconds
+
+  private getCacheKey(lat: number, lon: number, lang: string, units: string): string {
+    return `${lat.toFixed(4)},${lon.toFixed(4)},${lang},${units}`;
+  }
+
+  private getFromCache(key: string): any | null {
+    const cached = this.weatherCache.get(key);
+    if (cached && cached.expiry > Date.now()) {
+      return cached.data;
+    }
+    // Clean up expired entry
+    if (cached) {
+      this.weatherCache.delete(key);
+    }
+    return null;
+  }
+
+  private setCache(key: string, data: any): void {
+    // Evict oldest entries if cache is full
+    if (this.weatherCache.size >= this.CACHE_MAX_SIZE) {
+      const now = Date.now();
+      // First, remove expired entries
+      for (const [k, v] of this.weatherCache) {
+        if (v.expiry <= now) {
+          this.weatherCache.delete(k);
+        }
+      }
+      // If still full, remove the oldest entry
+      if (this.weatherCache.size >= this.CACHE_MAX_SIZE) {
+        const oldestKey = this.weatherCache.keys().next().value;
+        if (oldestKey) {
+          this.weatherCache.delete(oldestKey);
+        }
+      }
+    }
+    this.weatherCache.set(key, {
+      data,
+      expiry: Date.now() + this.CACHE_TTL_MS,
+    });
+  }
+
   async getCurrentWeatherByCoords(
     lat: number,
     lon: number,
@@ -23,10 +69,20 @@ export class WeatherService {
       throw new BadRequestException('Invalid lat/lon');
     }
 
+    // Check cache first
+    const cacheKey = this.getCacheKey(lat, lon, lang, units);
+    const cached = this.getFromCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     try {
       const res = await axios.get(`${this.baseUrl}/weather`, {
         params: { lat, lon, appid: this.apiKey, units, lang },
+        timeout: this.REQUEST_TIMEOUT_MS,
       });
+      // Cache the result
+      this.setCache(cacheKey, res.data);
       return res.data;
     } catch (err) {
       const e = err as AxiosError<any>;
@@ -75,6 +131,7 @@ export class WeatherService {
     try {
       const geo = await axios.get('https://api.openweathermap.org/geo/1.0/direct', {
         params: { q: query, limit: 1, appid: this.apiKey },
+        timeout: this.REQUEST_TIMEOUT_MS,
       });
       const first = Array.isArray(geo.data) ? geo.data[0] : null;
       if (!first) {
@@ -91,6 +148,7 @@ export class WeatherService {
   async geocodeCity(query: string) {
     const res = await axios.get('https://api.openweathermap.org/geo/1.0/direct', {
       params: { q: query, limit: 1, appid: this.apiKey },
+      timeout: this.REQUEST_TIMEOUT_MS,
     });
     const first = Array.isArray(res.data) ? res.data[0] : null;
     if (!first) return null;
