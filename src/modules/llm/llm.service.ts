@@ -34,6 +34,7 @@ export type LlmSimulationResult = {
 @Injectable()
 export class LlmService {
   private readonly geminiApiKey = process.env.GEMINI_API_KEY;
+  private readonly REQUEST_TIMEOUT_MS = 30000; // 30 seconds for LLM requests
 
   // -----------------------------
   // Backward-compatible methods
@@ -110,7 +111,7 @@ export class LlmService {
     const res = await axios.post(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
       { contents: [{ parts: [{ text: prompt }] }] },
-      { params: { key: this.geminiApiKey } },
+      { params: { key: this.geminiApiKey }, timeout: this.REQUEST_TIMEOUT_MS },
     );
 
     const rawText = res.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -147,7 +148,7 @@ export class LlmService {
       const res = await axios.post(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
         { contents: [{ parts: [{ text: prompt }] }] },
-        { params: { key: this.geminiApiKey } },
+        { params: { key: this.geminiApiKey }, timeout: this.REQUEST_TIMEOUT_MS },
       );
 
       const rawText =

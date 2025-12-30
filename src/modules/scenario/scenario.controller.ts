@@ -81,23 +81,23 @@ export class ScenarioController {
   @Get(':id/zones')
   @HttpCode(HttpStatus.OK)
   async zones(@Param('id') id: string) {
-    const sc = await this.scenarioService.getScenario(id);
-    return sc.zonesGeojson ?? { type: 'FeatureCollection', features: [] };
+    const zonesGeojson = await this.scenarioService.getScenarioField(id, 'zonesGeojson');
+    return zonesGeojson ?? { type: 'FeatureCollection', features: [] };
   }
 
   @ApiOperation({ summary: 'Get resource estimation' })
   @Get(':id/resources')
   @HttpCode(HttpStatus.OK)
   async resources(@Param('id') id: string) {
-    const sc = await this.scenarioService.getScenario(id);
-    return sc.resourcesJson ?? {};
+    const resourcesJson = await this.scenarioService.getScenarioField(id, 'resourcesJson');
+    return resourcesJson ?? {};
   }
 
   @ApiOperation({ summary: 'Get auto-generated response plan' })
   @Get(':id/plan')
   @HttpCode(HttpStatus.OK)
   async plan(@Param('id') id: string) {
-    const sc = await this.scenarioService.getScenario(id);
-    return sc.planJson ?? {};
+    const planJson = await this.scenarioService.getScenarioField(id, 'planJson');
+    return planJson ?? {};
   }
 }

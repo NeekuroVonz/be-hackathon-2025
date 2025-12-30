@@ -114,6 +114,22 @@ export class ScenarioService {
     return sc;
   }
 
+  /**
+   * Get specific fields from a scenario to avoid fetching the entire record.
+   * Useful for endpoints that only need a subset of data (e.g., zones, resources, plan).
+   */
+  async getScenarioField<K extends keyof Scenario>(
+    id: string,
+    field: K,
+  ): Promise<Scenario[K] | null> {
+    const sc = await this.scenarioRepo.findOne({
+      where: { scenarioId: id },
+      select: ['scenarioId', field],
+    });
+    if (!sc) throw new NotFoundException('Scenario not found');
+    return sc[field];
+  }
+
   /** Used by scenario.controller.ts */
   async createScenario(dto: any) {
     const entity = this.scenarioRepo.create({
@@ -130,17 +146,32 @@ export class ScenarioService {
 
   /** Used by scenario.controller.ts */
   async listMyScenarios(usrId: string) {
+    // Select only essential fields for listing (avoid fetching large JSONB columns)
+    const selectFields: (keyof Scenario)[] = [
+      'scenarioId',
+      'usrId',
+      'lat',
+      'lon',
+      'location',
+      'lang',
+      'note',
+      'creDt',
+      'updDt',
+    ];
+
     // If you have usrId column, filter by it; otherwise return recent scenarios.
     if (usrId) {
       return this.scenarioRepo.find({
         where: { usrId } as any,
         order: { creDt: 'DESC' as any },
         take: 50,
+        select: selectFields,
       } as any);
     }
     return this.scenarioRepo.find({
       order: { creDt: 'DESC' as any },
       take: 50,
+      select: selectFields,
     } as any);
   }
 
