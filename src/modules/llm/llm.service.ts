@@ -276,9 +276,9 @@ export class LlmService {
       Known coordinate center:
       lat=${lat}, lon=${lon}, displayName="${displayName}"
       
-      OUTPUT LANGUAGES:
-      Generate all text content (titles, descriptions, summaries, public messages, etc.) in these languages: ${languageList}
-      If multiple languages are specified, use the first language as the primary output language.
+      OUTPUT LANGUAGE:
+      Generate all text content (titles, descriptions, summaries, public messages, step details, etc.) in this language: ${languageList.split(',')[0]?.trim() || 'en'}
+      Use the specified language for all human-readable text fields in the JSON response.
       
       Now return ONLY the JSON object.
       `;
