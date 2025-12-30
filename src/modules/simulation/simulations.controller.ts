@@ -32,6 +32,7 @@ export class SimulationsController {
             lon: 108.2183,
             displayName: 'Tân Bình, Viet Nam',
           },
+          languages: ['en', 'vi'],
         },
       },
     },
